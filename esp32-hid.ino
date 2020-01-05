@@ -6,10 +6,8 @@
 
 BleKeyboard bleKeyboard;
 
-struct KeyPress {
-  long unsigned time;
-  int key;
-}
+unsigned long keyPresses[36];
+
 
 void setup() {
   Serial.begin(115200);
@@ -24,29 +22,41 @@ void setup() {
   digitalWrite(27, HIGH);
 
   
+  keyPresses[0] = 0;
+  keyPresses[1] = 0;
+  keyPresses[2] = 0;
+
   bleKeyboard.begin();
 }
 
+
+
+
 void loop() {
 
+// if(bleKeyboard.isConnected()) {
+
+    unsigned long time = millis();
+
+    /* Column 1 Scan */
     digitalWrite(24, HIGH);
 
     int r1 = 0;
     int r2 = 0;
 
-    Serial.println("Reading COL1");
+    // Serial.println("Reading COL1");
     r1 = digitalRead(26);
     r2 = digitalRead(27);
 
      
-    if ( r2 == HIGH){
-
+    if ( r1 == HIGH){
       bleKeyboard.press(KEY_LEFT_SHIFT);
       Serial.println("Sending shift");
-
     } 
 
-    if ( r1 == HIGH){
+    if ( r2 == HIGH && (keyPresses[0] < time)){
+
+      keyPresses[0] = millis() + 100;
 
       bleKeyboard.press('b');
       bleKeyboard.release('b');
@@ -56,23 +66,31 @@ void loop() {
 
     digitalWrite(24, LOW);
 
-    Serial.println("Done scanning COL1");
+    //Serial.println("Done scanning COL1");
     delay(2000);
 
+
+
+
+    /* Column 2 Scan */
     digitalWrite(14, HIGH);
-    Serial.println("Scanning COL2");
+    //Serial.println("Scanning COL2");
 
     r1 = digitalRead(26);
     r2 = digitalRead(27);
 
-    if ( r1 == HIGH ){
+    if ( r1 == HIGH && (keyPresses[1] < time)){
+
+      keyPresses[1] = millis() + 100;
 
       Serial.println("Sending c");
       bleKeyboard.press('c');
       bleKeyboard.release('c');
 
     } 
-    if ( r2 == HIGH){
+    if ( r2 == HIGH && (keyPresses[2] < time)){
+
+      keyPresses[2] = millis() + 100;
 
       Serial.println("Sending d");
       bleKeyboard.press('d');
@@ -80,12 +98,14 @@ void loop() {
 
     } 
 
-    Serial.println("Done scanning COL2");
-
-    digitalWrite(14, LOW);
-
-    bleKeyboard.releaseAll();
+  // Serial.println("Done scanning COL2");
+  digitalWrite(14, LOW);
 
 
-  delay(1000);
+
+
+  bleKeyboard.releaseAll();
+
+
+  delay(25);
 }
