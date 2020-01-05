@@ -6,73 +6,86 @@
 
 BleKeyboard bleKeyboard;
 
+struct KeyPress {
+  long unsigned time;
+  int key;
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE work!");
 
-  pinMode(36, INPUT);
-  digitalWrite(36, LOW);
-  pinMode(34, INPUT);
-  digitalWrite(34, LOW);
-  pinMode(35, INPUT);
-  digitalWrite(35, LOW);
+  pinMode(25, OUTPUT);
+  digitalWrite(25, LOW);
+
+  pinMode(26, INPUT);
+  digitalWrite(26, HIGH);
+  pinMode(27, INPUT);
+  digitalWrite(27, HIGH);
 
   
   bleKeyboard.begin();
 }
 
 void loop() {
-if(bleKeyboard.isConnected()) {
-  int a = digitalRead(34);
-  int shft = digitalRead(35);
-  int rtn = digitalRead(36);
-  if (shft == HIGH) {
-    bleKeyboard.press(KEY_LEFT_SHIFT);
-    Serial.println("Sending shift");
-  }
-  if (a == HIGH){
-    bleKeyboard.press('a');
-    Serial.println("Sending a");
-  }
-  if (rtn == HIGH) {
-    bleKeyboard.press(KEY_RETURN);
-    Serial.println("Sending return");
-  }
-  bleKeyboard.releaseAll();
 
-  /*
-    Serial.println("Sending 'Hello world'...");
-    bleKeyboard.print("Hello world");
+    digitalWrite(24, HIGH);
 
-    delay(1000);
+    int r1 = 0;
+    int r2 = 0;
 
-    Serial.println("Sending Enter key...");
-    bleKeyboard.write(KEY_RETURN);
+    Serial.println("Reading COL1");
+    r1 = digitalRead(26);
+    r2 = digitalRead(27);
 
-    delay(1000);
+     
+    if ( r2 == HIGH){
 
-    //Serial.println("Sending Play/Pause media key...");
-    //bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);
+      bleKeyboard.press(KEY_LEFT_SHIFT);
+      Serial.println("Sending shift");
 
-  Serial.println("Sending cap A");
-  bleKeyboard.press(KEY_LEFT_SHIFT);
-  bleKeyboard.press('a');
-  bleKeyboard.releaseAll();
-  bleKeyboard.press('a');
-  bleKeyboard.releaseAll();
-  bleKeyboard.press(KEY_RETURN);
-/*
-    delay(1000);
+    } 
 
-    Serial.println("Sending Ctrl+Alt+Delete...");
-    bleKeyboard.press(KEY_LEFT_CTRL);
-    bleKeyboard.press(KEY_LEFT_ALT);
-    bleKeyboard.press(KEY_DELETE);
-    delay(100);
+    if ( r1 == HIGH){
+
+      bleKeyboard.press('b');
+      bleKeyboard.release('b');
+      Serial.println("Sending b");
+
+    }
+
+    digitalWrite(24, LOW);
+
+    Serial.println("Done scanning COL1");
+    delay(2000);
+
+    digitalWrite(14, HIGH);
+    Serial.println("Scanning COL2");
+
+    r1 = digitalRead(26);
+    r2 = digitalRead(27);
+
+    if ( r1 == HIGH ){
+
+      Serial.println("Sending c");
+      bleKeyboard.press('c');
+      bleKeyboard.release('c');
+
+    } 
+    if ( r2 == HIGH){
+
+      Serial.println("Sending d");
+      bleKeyboard.press('d');
+      bleKeyboard.release('d');
+
+    } 
+
+    Serial.println("Done scanning COL2");
+
+    digitalWrite(14, LOW);
+
     bleKeyboard.releaseAll();
-*/
 
-  }
-  Serial.println("Scanning...");
-  delay(25);
+
+  delay(1000);
 }
