@@ -4,15 +4,19 @@
  */
 #include <BleKeyboard.h>
 
+#include "WiFi.h"
+
+
 BleKeyboard bleKeyboard;
 
 boolean pressed[6][14] = { 0 };
 
 const int rowCount = 6;
 const int colCount = 14;
+const int WAKEPIN = 15;
 
 // row GPIO map
-int rows[rowCount] = { 15, 2, 4, 16, 17, 5 };
+int rows[rowCount] = { 2, 4, 16, 17, 5, 18 };
 
 // col GPIO map
 int cols[colCount] = { 36, 39, 34, 35, 32, 33, 25, 26, 27, 14, 12, 13, 23, 22 };
@@ -28,6 +32,14 @@ int keys[6][14] = {
 };
 
 void setup() {
+  
+  // required or not?
+  WiFi.mode(WIFI_OFF);
+
+
+  // disable iturrupt 
+  // digitalWrite(WAKEPIN, HIGH);
+
   Serial.begin(115200);
 
   Serial.println("Initializing rows");
@@ -49,7 +61,10 @@ void setup() {
 }
 
 
+unsigned long last = 0;
+
 void loop() {
+
 
   // if(bleKeyboard.isConnected()) {
 
@@ -84,6 +99,7 @@ void loop() {
           bleKeyboard.release(keys[i][j]);
           pressed[i][j] = false;
 
+          last = millis();
         }
 
       }
@@ -95,6 +111,17 @@ void loop() {
 
     // scan again in 25ms
     delay(25);
+
+
+/*
+    // if there hasn't been a key up in the last 2 minutes...deep sleep
+    if (last < millis() - (2 * 60 * 1000)){
+
+      // enable button to wake 
+      digitalWrite(WAKEPIN, LOW);
+      esp_deep_sleep_start();
+    }
+    */
     
     
   // } // if connected
