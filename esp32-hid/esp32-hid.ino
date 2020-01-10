@@ -4,8 +4,6 @@
  */
 #include <BleKeyboard.h>
 
-#include "WiFi.h"
-
 
 BleKeyboard bleKeyboard;
 
@@ -23,19 +21,16 @@ int cols[colCount] = { 36, 39, 34, 35, 32, 33, 25, 26, 27, 14, 12, 13, 23, 22 };
 
 // key map
 int keys[6][14] = { 
-  { KEY_ESC, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_DELETE }, // row 1 
+  { KEY_ESC, '1', KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_DELETE }, // row 1 
   { '`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', KEY_BACKSPACE }, // row 2
   { KEY_TAB, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\' }, // row 3
   { KEY_CAPS_LOCK, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', KEY_RETURN }, // row 4
   { KEY_LEFT_SHIFT, 'z','x','c','v','b','n','m',',','.','/',KEY_RIGHT_SHIFT }, // row 5
-  { KEY_LEFT_CTRL, KEY_LEFT_GUI, KEY_LEFT_ALT, ' ',   KEY_RIGHT_ALT, KEY_RIGHT_CTRL, KEY_LEFT_ARROW, KEY_UP_ARROW, KEY_RIGHT_ARROW, KEY_DOWN_ARROW, KEY_PAGE_UP, KEY_PAGE_DOWN, KEY_HOME, KEY_END }, // row 6
+  { KEY_LEFT_CTRL, 'z', KEY_LEFT_ALT, ' ',   KEY_RIGHT_ALT, KEY_RIGHT_CTRL, KEY_LEFT_ARROW, KEY_UP_ARROW, KEY_RIGHT_ARROW, KEY_DOWN_ARROW, KEY_PAGE_UP, KEY_PAGE_DOWN, KEY_HOME, KEY_END }, // row 6
 };
 
 void setup() {
   
-  // required or not?
-  WiFi.mode(WIFI_OFF);
-
 
   // disable iturrupt 
   // digitalWrite(WAKEPIN, HIGH);
@@ -113,15 +108,14 @@ void loop() {
     delay(25);
 
 
-/*
     // if there hasn't been a key up in the last 2 minutes...deep sleep
     if (last < millis() - (2 * 60 * 1000)){
 
+      Serial.println("Sleeping...");
       // enable button to wake 
       digitalWrite(WAKEPIN, LOW);
       esp_deep_sleep_start();
     }
-    */
     
     
   // } // if connected
