@@ -4,14 +4,15 @@
  */
 #include <BleKeyboard.h>
 
-
 BleKeyboard bleKeyboard;
+
+const int POWERPIN = 6;
+const int BTNPIN = 7;
 
 boolean pressed[6][14] = { { 0 } };
 
 const int rowCount = 6;
 const int colCount = 14;
-const int WAKEPIN = 15;
 
 // row GPIO map
 int rows[rowCount] = { 2, 4, 16, 17, 5, 18 };
@@ -33,7 +34,8 @@ void setup() {
   
 
   // disable iturrupt 
-  // digitalWrite(WAKEPIN, HIGH);
+  digitalWrite(POWERPIN, HIGH);
+  digitalWrite(BTNPIN, LOW);
 
   Serial.begin(115200);
 
@@ -52,7 +54,6 @@ void setup() {
     //digitalWrite(cols[i], LOW);
   }
 
-  
 
   Serial.println("Starting the keyboard");
   bleKeyboard.begin();
@@ -62,11 +63,30 @@ void setup() {
 unsigned long last = 0;
 int lastMinute = 0;
 
+unsigned long btnPress = 0;
+
 void loop() {
 
 
-  // if(bleKeyboard.isConnected()) {
+  // check for a button state
+  uint8_t btnState = digitalRead(BTNPIN);
+  if (btnState == HIGH){
 
+    // if it has been 3 seconds..power off
+    if (btnPress && millis() - btnPress > 3000){
+      digitalWrite(POWERPIN, LOW);
+    } else if (!btnPress) {
+      btnPress = millis();
+    }
+
+  // if it isn't pressed...reset the timer
+  } else if (millis()){
+    btnPress = 0;
+  }
+
+
+  // if(bleKeyboard.isConnected()) {
+    
     // iterate over the rows
     for (int i=0; i < rowCount; i++){
 
