@@ -6,19 +6,16 @@
 
 BleKeyboard bleKeyboard;
 
-const int POWERPIN = 6;
-const int BTNPIN = 7;
-
-boolean pressed[6][14] = { { 0 } };
+boolean pressed[6][18] = { { 0 } };
 
 const int rowCount = 6;
-const int colCount = 14;
+const int colCount = 18;
 
 // row GPIO map
 int rows[rowCount] = { 2, 4, 16, 17, 5, 18 };
 
 // col GPIO map
-int cols[colCount] = { 36, 39, 34, 35, 32, 33, 25, 26, 27, 14, 12, 13, 23, 22 };
+int cols[colCount] = { 36, 39, 34, 35, 32, 33, 25, 26, 27, 14, 12, 13, 23, 22, 1, 3, 21, 19};
 
 // key map
 char keys[6][14] = { 
@@ -32,10 +29,6 @@ char keys[6][14] = {
 
 void setup() {
   
-
-  // disable iturrupt 
-  digitalWrite(POWERPIN, HIGH);
-  digitalWrite(BTNPIN, LOW);
 
   Serial.begin(115200);
 
@@ -51,7 +44,6 @@ void setup() {
   // init our scanning cols
   for ( int i=0; i < colCount; i++){
     pinMode(cols[i], INPUT_PULLUP);
-    //digitalWrite(cols[i], LOW);
   }
 
 
@@ -63,30 +55,10 @@ void setup() {
 unsigned long last = 0;
 int lastMinute = 0;
 
-unsigned long btnPress = 0;
+unsigned long powerOff = 0;
 
 void loop() {
 
-
-  // check for a button state
-  uint8_t btnState = digitalRead(BTNPIN);
-  if (btnState == HIGH){
-
-    // if it has been 3 seconds..power off
-    if (btnPress && millis() - btnPress > 3000){
-      digitalWrite(POWERPIN, LOW);
-    } else if (!btnPress) {
-      btnPress = millis();
-    }
-
-  // if it isn't pressed...reset the timer
-  } else if (millis()){
-    btnPress = 0;
-  }
-
-
-  // if(bleKeyboard.isConnected()) {
-    
     // iterate over the rows
     for (int i=0; i < rowCount; i++){
 
@@ -107,7 +79,7 @@ void loop() {
           Serial.print(i);
           Serial.print('-');
           Serial.println(j);
-          bleKeyboard.press(keys[i][j]);
+          if (bleKeyboard.isConnected()) bleKeyboard.press(keys[i][j]);
           pressed[i][j] = true;
 
 
@@ -119,7 +91,7 @@ void loop() {
           Serial.print(i);
           Serial.print('-');
           Serial.println(j);
-          bleKeyboard.release(keys[i][j]);
+          if (bleKeyboard.isConnected()) bleKeyboard.release(keys[i][j]);
           pressed[i][j] = false;
 
           last = millis();
@@ -131,22 +103,32 @@ void loop() {
       digitalWrite(rows[i], HIGH);
     }
 
-    /*
+
     // if there hasn't been a key up in the last 2 minutes...deep sleep
     if (millis() >= (2*60*1000) && last < millis() - (2 * 60 * 1000)){
-
       Serial.println("Sleeping...");
-      // enable button to wake 
-      // digitalWrite(WAKEPIN, LOW);
       esp_deep_sleep_start();
     }
-    */
+
   
+    // log minutes booted
     if (millis() % 60000 == 0 && millis() / 60000 != lastMinute){
       lastMinute = millis() / 60000;
-      Serial.println(lastMinute);
+      Serial.print(lastMinute);
+      Serial.println(" minutes powered up");
+    }
+
+
+    // check for power off. If both ALT keys are pressed for 3 seconds...
+    if (pressed[5][2] && pressed[5][4] && !powerOff) powerOff = millis();
+    else if (!pressed[5][2] || !pressed[5][4]) powerOff = 0;
+
+    if (powerOff > 0 && powerOff < millis() - 3000) {
+      Serial.println("Powering off");
+      for ( int i=0; i < rowCount; i++){
+       digitalWrite(rows[i],LOW);
+      }
+      delay(30000);
     }
     
-    
-  // } // if connected
 }
