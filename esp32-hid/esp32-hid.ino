@@ -18,13 +18,13 @@ int rows[rowCount] = { 2, 4, 16, 17, 5, 18 };
 int cols[colCount] = { 36, 39, 34, 35, 32, 33, 25, 26, 27, 14, 12, 13, 23, 22, 1, 3, 21, 19};
 
 // key map
-char keys[6][14] = { 
-  { KEY_ESC, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_DELETE }, // row 1 
-  { '`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', KEY_BACKSPACE }, // row 2
-  { KEY_TAB, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\' }, // row 3
-  { KEY_CAPS_LOCK, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', KEY_RETURN }, // row 4
-  { KEY_LEFT_SHIFT, 'z','x','c','v','b','n','m',',','.','/',KEY_RIGHT_SHIFT }, // row 5
-  { KEY_LEFT_CTRL, KEY_LEFT_GUI, KEY_LEFT_ALT, ' ',   KEY_RIGHT_ALT, KEY_RIGHT_CTRL, KEY_LEFT_ARROW, KEY_UP_ARROW, KEY_RIGHT_ARROW, KEY_DOWN_ARROW, KEY_PAGE_UP, KEY_PAGE_DOWN, KEY_HOME, KEY_END }, // row 6
+char keys[rowCount][colCount] = { 
+  { KEY_ESC, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, ' ', KEY_F9, KEY_F10, KEY_F11, KEY_F12, ' ', ' ', ' ' }, // row 1 
+  { '`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', KEY_BACKSPACE, KEY_INSERT, KEY_HOME, KEY_PAGE_UP }, // row 2
+  { KEY_TAB, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\', KEY_DELETE, KEY_END, KEY_PAGE_DOWN }, // row 3
+  { KEY_CAPS_LOCK, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', KEY_RETURN, ' ', ' ', ' ' }, // row 4
+  { KEY_LEFT_SHIFT, 'z','x','c','v','b','n','m',',','.','/',KEY_RIGHT_SHIFT, ' ', KEY_UP_ARROW, ' ' }, // row 5
+  { KEY_LEFT_CTRL, KEY_LEFT_GUI, KEY_LEFT_ALT, ' ', ' ', ' ', ' ', ' ', KEY_RIGHT_ALT, KEY_RIGHT_CTRL, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_PAGE_UP, KEY_PAGE_DOWN, KEY_HOME, KEY_END }, // row 6
 };
 
 void setup() {
@@ -49,6 +49,7 @@ void setup() {
 
   Serial.println("Starting the keyboard");
   bleKeyboard.begin();
+  delay(2000);
 }
 
 
@@ -76,9 +77,9 @@ void loop() {
           Serial.print("Sending key press for ");
           Serial.print(keys[i][j]);
           Serial.print('-');
-          Serial.print(i);
+          Serial.print(rows[i]);
           Serial.print('-');
-          Serial.println(j);
+          Serial.println(cols[j]);
           if (bleKeyboard.isConnected()) bleKeyboard.press(keys[i][j]);
           pressed[i][j] = true;
 
@@ -88,9 +89,9 @@ void loop() {
           Serial.print("Sending release command for ");
           Serial.print(keys[i][j]);
           Serial.print('-');
-          Serial.print(i);
+          Serial.print(rows[i]);
           Serial.print('-');
-          Serial.println(j);
+          Serial.println(cols[j]);
           if (bleKeyboard.isConnected()) bleKeyboard.release(keys[i][j]);
           pressed[i][j] = false;
 
