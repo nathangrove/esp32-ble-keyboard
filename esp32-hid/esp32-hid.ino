@@ -65,7 +65,7 @@ int lastMinute = 0;
 void loop() {
 
 
-  // if(bleKeyboard.isConnected()) {
+  if(bleKeyboard.isConnected()) {
 
     // iterate over the rows
     for (int i=0; i < rowCount; i++){
@@ -111,7 +111,7 @@ void loop() {
       digitalWrite(rows[i], HIGH);
     }
 
-    /*
+    
     // if there hasn't been a key up in the last 2 minutes...deep sleep
     if (millis() >= (2*60*1000) && last < millis() - (2 * 60 * 1000)){
 
@@ -120,7 +120,7 @@ void loop() {
       // digitalWrite(WAKEPIN, LOW);
       esp_deep_sleep_start();
     }
-    */
+    
   
     if (millis() % 60000 == 0 && millis() / 60000 != lastMinute){
       lastMinute = millis() / 60000;
@@ -128,5 +128,5 @@ void loop() {
     }
     
     
-  // } // if connected
+  } // if connected
 }
