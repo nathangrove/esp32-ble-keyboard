@@ -3,29 +3,32 @@
  * https://github.com/T-vK/ESP32-BLE-Keyboard/releases
  */
 #include <BleKeyboard.h>
-
 BleKeyboard bleKeyboard;
 
-boolean pressed[6][18] = { { 0 } };
 
 const int rowCount = 6;
-const int colCount = 18;
+const int colCount = 17;
+
+boolean pressed[rowCount][colCount] = { { 0 } };
+
 
 // row GPIO map
 int rows[rowCount] = { 2, 4, 16, 17, 5, 18 };
 
 // col GPIO map
-int cols[colCount] = { 36, 39, 34, 35, 32, 33, 25, 26, 27, 14, 12, 13, 23, 22, 1, 3, 21, 19};
+int cols[colCount] = { 36, 39, 34, 35, 32, 33, 25, 26, 27, 14, 12, 13, 23, 22, 19, 3, 21 };
 
 // key map
 char keys[rowCount][colCount] = { 
-  { KEY_ESC, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, ' ', KEY_F9, KEY_F10, KEY_F11, KEY_F12, ' ', ' ', ' ' }, // row 1 
-  { '`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', KEY_BACKSPACE, KEY_INSERT, KEY_HOME, KEY_PAGE_UP }, // row 2
-  { KEY_TAB, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\', KEY_DELETE, KEY_END, KEY_PAGE_DOWN }, // row 3
-  { KEY_CAPS_LOCK, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', KEY_RETURN, ' ', ' ', ' ' }, // row 4
-  { KEY_LEFT_SHIFT, 'z','x','c','v','b','n','m',',','.','/',KEY_RIGHT_SHIFT, ' ', KEY_UP_ARROW, ' ' }, // row 5
-  { KEY_LEFT_CTRL, KEY_LEFT_GUI, KEY_LEFT_ALT, ' ', ' ', ' ', ' ', ' ', KEY_RIGHT_ALT, KEY_RIGHT_CTRL, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_PAGE_UP, KEY_PAGE_DOWN, KEY_HOME, KEY_END }, // row 6
+  { KEY_ESC,        KEY_F1,       KEY_F2,       KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8,        '~', KEY_F9,        KEY_F10,         KEY_F11,         KEY_F12,        '~',            '~',            '~' }, // row 1 
+  { '`',            '1',          '2',          '3',    '4',    '5',    '6',    '7',    '8',           '9', '0',           '-',             '=',             KEY_BACKSPACE,  KEY_INSERT,     KEY_HOME,       KEY_PAGE_UP }, // row 2
+  { KEY_TAB,        'q',          'w',          'e',    'r',    't',    'y',    'u',    'i',           'o', 'p',           '[',             ']',             '\\',            KEY_DELETE,     KEY_END,        KEY_PAGE_DOWN }, // row 3
+  { KEY_CAPS_LOCK,  'a',          's',          'd',    'f',    'g',    'h',    'j',    'k',           'l', ';',           '\'',             '~',             KEY_RETURN,     '~',            '~',            '~' }, // row 4
+  { KEY_LEFT_SHIFT, 'z',          'x',          'c',    'v',    'b',    'n',    'm',    ',',           '.', '/',           '~',             KEY_RIGHT_SHIFT, '~',            '~',            KEY_UP_ARROW,   '~' }, // row 5
+  { KEY_LEFT_CTRL,  KEY_LEFT_GUI, KEY_LEFT_ALT, '~',    '~',    '~',    ' ',    '~',    KEY_RIGHT_ALT, '~', KEY_RIGHT_GUI, '~',             KEY_RIGHT_CTRL,  '~',             KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW }, // row 6
 };
+
+
 
 void setup() {
   
@@ -49,29 +52,26 @@ void setup() {
 
   Serial.println("Starting the keyboard");
   bleKeyboard.begin();
-  delay(2000);
 }
-
 
 unsigned long last = 0;
 int lastMinute = 0;
-
 unsigned long powerOff = 0;
+bool wasConnected = false;
 
-<<<<<<< HEAD
-  if(bleKeyboard.isConnected()) {
-=======
 void loop() {
->>>>>>> 2c850e6c32beffe8cb04db5f9babd59e7c6d8126
 
     // iterate over the rows
     for (int i=0; i < rowCount; i++){
 
       // turn the row on
+
       digitalWrite(rows[i], LOW);
 
       // iterate over columns looking for high to indicate a key press
       for (int j=0; j < colCount; j++){
+
+        if (keys[i][j] == '~') continue;
 
         // see if the pin is high
         uint8_t colState = digitalRead(cols[j]);
@@ -84,19 +84,24 @@ void loop() {
           Serial.print(rows[i]);
           Serial.print('-');
           Serial.println(cols[j]);
-          if (bleKeyboard.isConnected()) bleKeyboard.press(keys[i][j]);
+
+          bleKeyboard.press(keys[i][j]);
+
+
           pressed[i][j] = true;
 
-
         // if it isn't pressed and it prevously was...release it...
-        } else if (pressed[i][j] && colState == HIGH ){
+        } else if (colState == HIGH && pressed[i][j] ){
           Serial.print("Sending release command for ");
           Serial.print(keys[i][j]);
           Serial.print('-');
           Serial.print(rows[i]);
           Serial.print('-');
           Serial.println(cols[j]);
-          if (bleKeyboard.isConnected()) bleKeyboard.release(keys[i][j]);
+          
+
+          bleKeyboard.release(keys[i][j]);
+
           pressed[i][j] = false;
 
           last = millis();
@@ -106,23 +111,13 @@ void loop() {
 
       // turn the row off
       digitalWrite(rows[i], HIGH);
+      delay(2);
     }
-
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> 2c850e6c32beffe8cb04db5f9babd59e7c6d8126
-    // if there hasn't been a key up in the last 2 minutes...deep sleep
-    if (millis() >= (2*60*1000) && last < millis() - (2 * 60 * 1000)){
+    // if there hasn't been a key up in the last 5 minutes...deep sleep
+    if (millis() >= (5*60*1000) && last < millis() - (5 * 60 * 1000)){
       Serial.println("Sleeping...");
       esp_deep_sleep_start();
     }
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> 2c850e6c32beffe8cb04db5f9babd59e7c6d8126
   
     // log minutes booted
     if (millis() % 60000 == 0 && millis() / 60000 != lastMinute){
@@ -131,22 +126,7 @@ void loop() {
       Serial.println(" minutes powered up");
     }
 
+  
 
-    // check for power off. If both ALT keys are pressed for 3 seconds...
-    if (pressed[5][2] && pressed[5][4] && !powerOff) powerOff = millis();
-    else if (!pressed[5][2] || !pressed[5][4]) powerOff = 0;
 
-    if (powerOff > 0 && powerOff < millis() - 3000) {
-      Serial.println("Powering off");
-      for ( int i=0; i < rowCount; i++){
-       digitalWrite(rows[i],LOW);
-      }
-      delay(30000);
-    }
-    
-<<<<<<< HEAD
-    
-  } // if connected
-=======
->>>>>>> 2c850e6c32beffe8cb04db5f9babd59e7c6d8126
 }
