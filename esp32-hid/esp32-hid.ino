@@ -12,6 +12,7 @@ const int colCount = 17;
 boolean pressed[rowCount][colCount] = { { 0 } };
 
 
+
 // row GPIO map
 int rows[rowCount] = { 2, 4, 16, 17, 5, 18 };
 
@@ -29,13 +30,20 @@ char keys[rowCount][colCount] = {
 };
 
 
+// function key stuffs...
+const int fnRow = 5;
+const int fnCol = 11;
+
+uint8_t fnKeys[rowCount][colCount][2] = { { { 0 }, {128, 0}, {64, 0}, {32, 0}, {16, 0} } };
+
 
 void setup() {
+
   
 
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
-  Serial.println("Initializing rows");
+  //Serial.println("Initializing rows");
 
   // init our scanning rows
   for ( int i=0; i < rowCount; i++){
@@ -43,23 +51,25 @@ void setup() {
     digitalWrite(rows[i], HIGH);
   }
 
-  Serial.println("Initializing columns");
+  //Serial.println("Initializing columns");
   // init our scanning cols
   for ( int i=0; i < colCount; i++){
     pinMode(cols[i], INPUT_PULLUP);
   }
 
 
-  Serial.println("Starting the keyboard");
+  //Serial.println("Starting the keyboard");
   bleKeyboard.begin();
 }
 
 unsigned long last = 0;
 int lastMinute = 0;
-unsigned long powerOff = 0;
 bool wasConnected = false;
 
 void loop() {
+
+  if (bleKeyboard.isConnected()){
+    wasConnected = true;
 
     // iterate over the rows
     for (int i=0; i < rowCount; i++){
@@ -78,29 +88,31 @@ void loop() {
 
         // if it is pressed and not previously pressed...press it...
         if (colState == LOW && !pressed[i][j]){
-          Serial.print("Sending key press for ");
-          Serial.print(keys[i][j]);
-          Serial.print('-');
-          Serial.print(rows[i]);
-          Serial.print('-');
-          Serial.println(cols[j]);
+          //Serial.print("Sending key press for ");
+          //Serial.print(keys[i][j]);
+          //Serial.print('-');
+          //Serial.print(rows[i]);
+          //Serial.print('-');
+          //Serial.println(cols[j]);
 
-          bleKeyboard.press(keys[i][j]);
-
+          if (pressed[fnRow][fnCol]) bleKeyboard.press(fnKeys[i][j]);
+          else bleKeyboard.press(keys[i][j]);
 
           pressed[i][j] = true;
 
+
+
         // if it isn't pressed and it prevously was...release it...
         } else if (colState == HIGH && pressed[i][j] ){
-          Serial.print("Sending release command for ");
-          Serial.print(keys[i][j]);
-          Serial.print('-');
-          Serial.print(rows[i]);
-          Serial.print('-');
-          Serial.println(cols[j]);
+          //Serial.print("Sending release command for ");
+          //Serial.print(keys[i][j]);
+          //Serial.print('-');
+          //Serial.print(rows[i]);
+          //Serial.print('-');
+          //Serial.println(cols[j]);
           
-
-          bleKeyboard.release(keys[i][j]);
+          if (pressed[fnRow][fnCol]) bleKeyboard.release(fnKeys[i][j]);
+          else bleKeyboard.release(keys[i][j]);
 
           pressed[i][j] = false;
 
@@ -113,18 +125,22 @@ void loop() {
       digitalWrite(rows[i], HIGH);
       delay(2);
     }
-    // if there hasn't been a key up in the last 5 minutes...deep sleep
-    if (millis() >= (5*60*1000) && last < millis() - (5 * 60 * 1000)){
-      Serial.println("Sleeping...");
-      esp_deep_sleep_start();
-    }
   
-    // log minutes booted
-    if (millis() % 60000 == 0 && millis() / 60000 != lastMinute){
-      lastMinute = millis() / 60000;
-      Serial.print(lastMinute);
-      Serial.println(" minutes powered up");
-    }
+  }
+
+  // if we were connected but are no longer connected...shut down
+  if (wasConnected && !bleKeyboard.isConnected()){
+    esp_deep_sleep_start();
+  }
+
+  // if there hasn't been a key up in the last 5 minutes...deep sleep
+  if (millis() >= (5*60*1000) && last < millis() - (5 * 60 * 1000)){
+    //Serial.println("Sleeping...");
+    esp_deep_sleep_start();
+  }
+
+
+  
 
   
 
