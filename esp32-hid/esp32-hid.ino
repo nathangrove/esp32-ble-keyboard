@@ -2,8 +2,13 @@
  * This example turns the ESP32 into a Bluetooth LE keyboard that writes the words, presses Enter, presses a media key and then Ctrl+Alt+Delete
  * https://github.com/T-vK/ESP32-BLE-Keyboard/releases
  */
+
+// 24:6F:28:B2:41:96
+#include <HardwareSerial.h>
 #include <BleKeyboard.h>
-BleKeyboard bleKeyboards[2];
+
+
+BleKeyboard bleKeyboard;
 
 int currentKeyboard = 0;
 
@@ -12,7 +17,6 @@ const int rowCount = 6;
 const int colCount = 17;
 
 boolean pressed[rowCount][colCount] = { { 0 } };
-
 
 
 // row GPIO map
@@ -41,6 +45,8 @@ uint8_t fnKeys[rowCount][colCount][2] = { { { 0 }, {128, 0}, {64, 0}, {32, 0}, {
 
 void setup() {
 
+  Serial.begin(115200);
+
   // init our scanning rows
   for ( int i=0; i < rowCount; i++){
     pinMode(rows[i], OUTPUT);
@@ -52,9 +58,11 @@ void setup() {
     pinMode(cols[i], INPUT_PULLUP);
   }
 
-  for (int i=0; i < 2; i++){
-    bleKeyboards[i].begin();
-  }
+
+
+
+  bleKeyboard = BleKeyboard("GroveBoard #0", "Nathan Grove", 100);
+  bleKeyboard.begin();
 
 }
 
@@ -64,58 +72,55 @@ bool wasConnected = false;
 
 void loop() {
 
-  if (bleKeyboards[currentKeyboard].isConnected()){
+  if (bleKeyboard.isConnected())
     wasConnected = true;
 
-    // iterate over the rows
-    for (int i=0; i < rowCount; i++){
+  // iterate over the rows
+  for (int i=0; i < rowCount; i++){
 
-      // turn the row on
+    // turn the row on
 
-      digitalWrite(rows[i], LOW);
+    digitalWrite(rows[i], LOW);
 
-      // iterate over columns looking for high to indicate a key press
-      for (int j=0; j < colCount; j++){
+    // iterate over columns looking for high to indicate a key press
+    for (int j=0; j < colCount; j++){
 
-        if (keys[i][j] == '~') continue;
+      if (keys[i][j] == '~' && (i != fnRow && j != fnCol)) continue;
 
-        // see if the pin is high
-        uint8_t colState = digitalRead(cols[j]);
+      // see if the pin is high
+      uint8_t colState = digitalRead(cols[j]);
 
-        // if it is pressed and not previously pressed...press it...
-        if (colState == LOW && !pressed[i][j]){
+      // if it is pressed and not previously pressed...press it...
+      if (colState == LOW && !pressed[i][j]){
 
-          if (pressed[fnRow][fnCol] && pressed[1][1]) switchKeyboards(0);
-          else if (pressed[fnRow][fnCol] && pressed[1][2]) switchKeyboards(1);
-          else if (pressed[fnRow][fnCol]) bleKeyboards[currentKeyboard].press(fnKeys[i][j]);
-          else bleKeyboards[currentKeyboard].press(keys[i][j]);
+        if (pressed[fnRow][fnCol] && !(i == fnRow && j == fnCol)) bleKeyboard.press(fnKeys[i][j]);
+        else if ( !(i == fnRow && j == fnCol)) bleKeyboard.press(keys[i][j]);
 
-          pressed[i][j] = true;
+        pressed[i][j] = true;
 
 
 
-        // if it isn't pressed and it prevously was...release it...
-        } else if (colState == HIGH && pressed[i][j] ){
-          
-          if (pressed[fnRow][fnCol]) bleKeyboards[currentKeyboard].release(fnKeys[i][j]);
-          else bleKeyboards[currentKeyboard].release(keys[i][j]);
-
-          pressed[i][j] = false;
-
-          last = millis();
-        }
+      // if it isn't pressed and it prevously was...release it...
+      } else if (colState == HIGH && pressed[i][j] ){
         
-      }
+        if (pressed[fnRow][fnCol]) bleKeyboard.release(fnKeys[i][j]);
+        else bleKeyboard.release(keys[i][j]);
 
-      // turn the row off
-      digitalWrite(rows[i], HIGH);
-      delay(2);
+        pressed[i][j] = false;
+
+        last = millis();
+      }
+      
     }
-  
+
+    // turn the row off
+    digitalWrite(rows[i], HIGH);
+    delay(2);
   }
 
+
   // if we were connected but are no longer connected...shut down
-  //if (wasConnected && !bleKeyboards[currentKeyboard].isConnected()){
+  //if (wasConnected && !bleKeyboard.isConnected()){
   //  esp_deep_sleep_start();
   //}
 
@@ -127,14 +132,17 @@ void loop() {
 
   
 
-  
+  if (pressed[fnRow][fnCol] && pressed[1][1] && currentKeyboard != 0) switchKeyboards(0);
+  else if (pressed[fnRow][fnCol] && pressed[1][2] && currentKeyboard != 1) switchKeyboards(1);
 
 
 }
 
 void switchKeyboards(int newBoardIndex){
-  currentKeyboard = newBoardIndex;
   
+  Serial.print("Setting current keyboard: ");
+  Serial.println(newBoardIndex);
+
   // init our scanning rows
   for ( int i=0; i < rowCount; i++){
     pinMode(rows[i], OUTPUT);
@@ -146,10 +154,23 @@ void switchKeyboards(int newBoardIndex){
     pinMode(cols[i], INPUT_PULLUP);
   }
 
+  // relase all pressed keys
   for ( int i=0; i < rowCount; i++){
     for (int j=0; j < colCount; j++){
-      pressed[i][j] = 0;
+      if (pressed[i][j]) {
+        bleKeyboard.release(keys[i][j]);
+        pressed[i][j] = false;
+      }
     }
   }
+
+  bleKeyboard.end();
+
+  if (currentKeyboard == 0) bleKeyboard = BleKeyboard("GroveBoard #1", "Nathan Grove", 100);
+  else bleKeyboard = BleKeyboard("GroveBoard #0", "Nathan Grove", 100);
+
+  bleKeyboard.begin();
+
+  currentKeyboard = newBoardIndex;
 
 }
