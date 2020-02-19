@@ -3,15 +3,17 @@
  * https://github.com/T-vK/ESP32-BLE-Keyboard/releases
  */
 
-// 24:6F:28:B2:41:96
 #include <HardwareSerial.h>
 #include <BleKeyboard.h>
+#include <EEPROM.h>
+
+#define EEPROM_SIZE 1
+
+
+
 
 
 BleKeyboard bleKeyboard;
-
-int currentKeyboard = 0;
-
 
 const int rowCount = 6;
 const int colCount = 17;
@@ -39,13 +41,31 @@ char keys[rowCount][colCount] = {
 // function key stuffs...
 const int fnRow = 5;
 const int fnCol = 11;
+int currentKeyboard = 0;
 
 uint8_t fnKeys[rowCount][colCount][2] = { { { 0 }, {128, 0}, {64, 0}, {32, 0}, {16, 0} } };
 
 
 void setup() {
-
+  
   Serial.begin(115200);
+
+  EEPROM.begin(EEPROM_SIZE);
+
+  currentKeyboard = EEPROM.read(0);
+  Serial.print("Setting in EEPROM ");
+  Serial.println(currentKeyboard);
+
+  // compute a mac
+  uint8_t mac[8] = { 0x24, 0x6F, 0x28, 0xB2, 0x41, 0x94 + currentKeyboard };
+  esp_base_mac_addr_set(mac);
+
+  // set the name
+  String name = String("GroveBoard #") + String(currentKeyboard + 1); //(currentKeyboard + 1);
+  Serial.println(name);
+  bleKeyboard = BleKeyboard(name.c_str(), "Nathan Grove", 100);
+
+
 
   // init our scanning rows
   for ( int i=0; i < rowCount; i++){
@@ -61,7 +81,6 @@ void setup() {
 
 
 
-  bleKeyboard = BleKeyboard("GroveBoard #0", "Nathan Grove", 100);
   bleKeyboard.begin();
 
 }
@@ -72,8 +91,6 @@ bool wasConnected = false;
 
 void loop() {
 
-  if (bleKeyboard.isConnected())
-    wasConnected = true;
 
   // iterate over the rows
   for (int i=0; i < rowCount; i++){
@@ -85,7 +102,9 @@ void loop() {
     // iterate over columns looking for high to indicate a key press
     for (int j=0; j < colCount; j++){
 
-      if (keys[i][j] == '~' && (i != fnRow && j != fnCol)) continue;
+      bool isFnKey = i == fnRow && j == fnCol;
+
+      if (keys[i][j] == '~' && !isFnKey) continue;
 
       // see if the pin is high
       uint8_t colState = digitalRead(cols[j]);
@@ -93,8 +112,8 @@ void loop() {
       // if it is pressed and not previously pressed...press it...
       if (colState == LOW && !pressed[i][j]){
 
-        if (pressed[fnRow][fnCol] && !(i == fnRow && j == fnCol)) bleKeyboard.press(fnKeys[i][j]);
-        else if ( !(i == fnRow && j == fnCol)) bleKeyboard.press(keys[i][j]);
+        if (pressed[fnRow][fnCol] && !isFnKey) bleKeyboard.press(fnKeys[i][j]);
+        else if ( !isFnKey ) bleKeyboard.press(keys[i][j]);
 
         pressed[i][j] = true;
 
@@ -103,8 +122,8 @@ void loop() {
       // if it isn't pressed and it prevously was...release it...
       } else if (colState == HIGH && pressed[i][j] ){
         
-        if (pressed[fnRow][fnCol]) bleKeyboard.release(fnKeys[i][j]);
-        else bleKeyboard.release(keys[i][j]);
+        if (pressed[fnRow][fnCol] && !isFnKey) bleKeyboard.release(fnKeys[i][j]);
+        else if (!isFnKey) bleKeyboard.release(keys[i][j]);
 
         pressed[i][j] = false;
 
@@ -132,9 +151,10 @@ void loop() {
 
   
 
-  if (pressed[fnRow][fnCol] && pressed[1][1] && currentKeyboard != 0) switchKeyboards(0);
-  else if (pressed[fnRow][fnCol] && pressed[1][2] && currentKeyboard != 1) switchKeyboards(1);
-
+  // check if they are switching boards...
+  for ( int i=0; i < 9; i++){
+    if (pressed[fnRow][fnCol] && pressed[1][i+1] && currentKeyboard != i) switchKeyboards(i);
+  }
 
 }
 
@@ -164,13 +184,8 @@ void switchKeyboards(int newBoardIndex){
     }
   }
 
-  bleKeyboard.end();
-
-  if (currentKeyboard == 0) bleKeyboard = BleKeyboard("GroveBoard #1", "Nathan Grove", 100);
-  else bleKeyboard = BleKeyboard("GroveBoard #0", "Nathan Grove", 100);
-
-  bleKeyboard.begin();
-
-  currentKeyboard = newBoardIndex;
+  EEPROM.write(0,newBoardIndex);
+  EEPROM.commit();
+  ESP.restart();
 
 }
