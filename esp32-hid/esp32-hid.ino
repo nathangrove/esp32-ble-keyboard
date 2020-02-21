@@ -3,13 +3,11 @@
  * https://github.com/T-vK/ESP32-BLE-Keyboard/releases
  */
 
-#include <HardwareSerial.h>
+// #include <HardwareSerial.h>
 #include <BleKeyboard.h>
 #include <EEPROM.h>
 
 #define EEPROM_SIZE 1
-
-
 
 
 
@@ -48,13 +46,13 @@ uint8_t fnKeys[rowCount][colCount][2] = { { { 0 }, {128, 0}, {64, 0}, {32, 0}, {
 
 void setup() {
   
-  Serial.begin(115200);
+  // Serial.begin(115200);
 
   EEPROM.begin(EEPROM_SIZE);
 
   currentKeyboard = EEPROM.read(0);
-  Serial.print("Setting in EEPROM ");
-  Serial.println(currentKeyboard);
+  // Serial.print("Setting in EEPROM ");
+  // Serial.println(currentKeyboard);
 
   // compute a mac
   uint8_t mac[8] = { 0x24, 0x6F, 0x28, 0xB2, 0x41, 0x94 + currentKeyboard };
@@ -62,7 +60,7 @@ void setup() {
 
   // set the name
   String name = String("GroveBoard #") + String(currentKeyboard + 1); //(currentKeyboard + 1);
-  Serial.println(name);
+  // Serial.println(name);
   bleKeyboard = BleKeyboard(name.c_str(), "Nathan Grove", 100);
 
 
@@ -129,7 +127,6 @@ void loop() {
 
         last = millis();
       }
-      
     }
 
     // turn the row off
@@ -149,19 +146,20 @@ void loop() {
   }
 
 
-  
-
   // check if they are switching boards...
-  for ( int i=0; i < 9; i++){
-    if (pressed[fnRow][fnCol] && pressed[1][i+1] && currentKeyboard != i) switchKeyboards(i);
+  if (pressed[fnRow][fnCol]){
+    for ( int i=0; i < 9; i++){
+      if (pressed[1][i+1] && currentKeyboard != i) switchKeyboards(i);
+    }
   }
+
 
 }
 
 void switchKeyboards(int newBoardIndex){
   
-  Serial.print("Setting current keyboard: ");
-  Serial.println(newBoardIndex);
+  // Serial.print("Setting current keyboard: ");
+  // Serial.println(newBoardIndex);
 
   // init our scanning rows
   for ( int i=0; i < rowCount; i++){
